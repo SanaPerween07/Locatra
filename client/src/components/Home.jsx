@@ -1,0 +1,214 @@
+import { useEffect, useState } from "react";
+import axios from "axios";
+import polyline from "@mapbox/polyline";
+
+const MapplsMap = () => {
+  const [mapObj, setMapObj] = useState(null);
+
+  const [source, setSource] = useState("");
+  const [destination, setDestination] = useState("");
+
+  const [sourceSuggestions, setSourceSuggestions] = useState([]);
+  const [destSuggestions, setDestSuggestions] = useState([]);
+
+  const [routePolyline, setRoutePolyline] = useState(null);
+  const [startMarker, setStartMarker] = useState(null);
+  const [endMarker, setEndMarker] = useState(null);
+
+  useEffect(() => {
+    const script = document.createElement("script");
+    script.src = `https://apis.mappls.com/advancedmaps/api/${
+      import.meta.env.VITE_MAPPLS_REST_KEY
+    }/map_sdk?layer=vector&v=3.0&callback=initMap`;
+    script.async = true;
+    document.body.appendChild(script);
+
+    window.initMap = () => {
+      if (!window.mappls) return console.error("Mappls SDK not loaded!");
+      const map = new window.mappls.Map("map", {
+        center: [28.6139, 77.209],
+        zoom: 5,
+      });
+      setMapObj(map);
+    };
+
+    return () => {
+      document.body.removeChild(script);
+      delete window.initMap;
+    };
+  }, []);
+
+  const getSuggestions = async (query, setter) => {
+    if (!query) return setter([]);
+    try {
+      const res = await axios.get("http://localhost:5000/api/autosuggest", {
+        params: { query },
+      });
+      setter(res.data.suggestedLocations || []);
+    } catch (err) {
+      console.error("Autosuggest error:", err.response?.data || err.message);
+    }
+  };
+
+  const geocodeAddress = async (address) => {
+    if (!address) return null;
+    try {
+      const res = await axios.get("http://localhost:5000/api/geocode", {
+        params: { address },
+      });
+      return res.data;
+    } catch (err) {
+      console.error("Geocode error:", err.response?.data || err.message);
+      return null;
+    }
+  };
+
+  const getRoute = async () => {
+
+    if (!mapObj) {
+      alert("Map is not initialized yet!");
+      return;
+    }
+
+    if (!source || !destination) {
+      alert("Please enter both source and destination!");
+      return;
+    }
+
+    try {
+      const src = await geocodeAddress(source);
+      const dest = await geocodeAddress(destination);
+
+      if (!src?.eLoc || !dest?.eLoc) {
+        alert("Could not find eLocs for given addresses");
+        return;
+      }
+
+      const routeRes = await axios.get("http://localhost:5000/api/route", {
+        params: { sourceEloc: src.eLoc, destEloc: dest.eLoc },
+      });
+
+      const routeData = routeRes.data;
+
+      // Decode Mappls polyline
+      const coords = polyline.decode(routeData.routes[0].geometry); 
+
+      if (!coords.length) {
+        alert("No route found!");
+        return;
+      }
+
+      // Remove previous route and markers
+      if (routePolyline) routePolyline.setMap(null);
+      if (startMarker) startMarker.setMap(null);
+      if (endMarker) endMarker.setMap(null);
+
+      // Draw new route
+      const newPolyline = new window.mappls.Polyline({
+        map: mapObj,
+        path: coords.map(([lat, lng]) => ({ lat, lng })),
+        strokeColor: "#1976D2",
+        strokeWeight: 5,
+        strokeOpacity: 0.8,
+      });
+      setRoutePolyline(newPolyline);
+
+      // Add start and end markers
+      const start = new window.mappls.Marker({
+        map: mapObj,
+        position: { lat: coords[0][0], lng: coords[0][1] },
+        title: "Start",
+      });
+      const end = new window.mappls.Marker({
+        map: mapObj,
+        position: { lat: coords[coords.length - 1][0], lng: coords[coords.length - 1][1] },
+        title: "End",
+      });
+      setStartMarker(start);
+      setEndMarker(end);
+
+      // Zoom map to fit route
+      mapObj.fitBounds(coords.map(([lat, lng]) => [lng, lat]));
+
+
+    } catch (err) {
+      console.error("Route error:", err.response?.data || err.message);
+      alert("Failed to fetch route");
+    }
+  };
+
+  return (
+    <div>
+      <div className="p-3 bg-gray-100 flex gap-2">
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Enter Source"
+            value={source}
+            onChange={(e) => {
+              setSource(e.target.value);
+              getSuggestions(e.target.value, setSourceSuggestions);
+            }}
+            className="px-2 py-1 border rounded w-64"
+          />
+          {sourceSuggestions.length > 0 && (
+            <ul className="absolute bg-white border w-64 max-h-40 overflow-y-auto z-10">
+              {sourceSuggestions.map((s, i) => (
+                <li
+                  key={i}
+                  className="px-2 py-1 hover:bg-gray-200 cursor-pointer"
+                  onClick={() => {
+                    setSource(s.placeName || s.placeAddress);
+                    setSourceSuggestions([]);
+                  }}
+                >
+                  {s.placeName} - {s.placeAddress}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Enter Destination"
+            value={destination}
+            onChange={(e) => {
+              setDestination(e.target.value);
+              getSuggestions(e.target.value, setDestSuggestions);
+            }}
+            className="px-2 py-1 border rounded w-64"
+          />
+          {destSuggestions.length > 0 && (
+            <ul className="absolute bg-white border w-64 max-h-40 overflow-y-auto z-10">
+              {destSuggestions.map((s, i) => (
+                <li
+                  key={i}
+                  className="px-2 py-1 hover:bg-gray-200 cursor-pointer"
+                  onClick={() => {
+                    setDestination(s.placeName || s.placeAddress);
+                    setDestSuggestions([]);
+                  }}
+                >
+                  {s.placeName} - {s.placeAddress}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        <button onClick={getRoute} className="px-4 py-2 bg-blue-600 text-white rounded" disabled={!mapObj}>
+          Get Route
+        </button>
+      </div>
+
+      <div
+        id="map"
+        style={{ width: "100%", height: "90vh", border: "1px solid #ccc" }}
+      />
+    </div>
+  );
+};
+
+export default MapplsMap;

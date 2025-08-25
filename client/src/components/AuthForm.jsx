@@ -1,5 +1,6 @@
 import { useState } from "react";
 import axios from "axios"
+import { useNavigate } from "react-router-dom";
 
 axios.defaults.withCredentials = true;
 
@@ -9,6 +10,8 @@ const AuthForm = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+
+    const navigate = useNavigate();
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -30,6 +33,11 @@ const AuthForm = () => {
             alert(res.data.message);
             console.log("User:", res.data.user);
 
+            // Redirect after login/signup success
+            if (isLogin) {
+                navigate("/home"); // 👈 navigate to home page
+            }
+
             // Reset fields after success
             setEmail("");
             setPassword("");
@@ -44,10 +52,20 @@ const AuthForm = () => {
     <div>
         <h2> {isLogin ? 'Login': 'Sign-Up'} </h2>
         <form onSubmit={handleSubmit}>
-            <input type='email' placeholder='enter your username' value={email}
-                onChange={(e) => setEmail(e.target.value)} required/>
-            <input type='password' placeholder='enter your password' value={password}
-                onChange={(e) => setPassword(e.target.value)} required/>
+            <input 
+                type='email' 
+                placeholder='enter your username' 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)} 
+                required
+            />
+            <input 
+                type='password' 
+                placeholder='enter your password' 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)} 
+                required
+            />
 
             {!isLogin && (
                 <input
