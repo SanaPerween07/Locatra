@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "axios"
 import { useNavigate } from "react-router-dom";
+import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
 axios.defaults.withCredentials = true;
 
@@ -10,6 +11,7 @@ const AuthForm = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+
 
     const navigate = useNavigate();
 
@@ -33,12 +35,10 @@ const AuthForm = () => {
             alert(res.data.message);
             console.log("User:", res.data.user);
 
-            // Redirect after login/signup success
             if (isLogin) {
-                navigate("/home"); // 👈 navigate to home page
+                navigate("/home"); 
             }
 
-            // Reset fields after success
             setEmail("");
             setPassword("");
             setConfirmPassword("");
@@ -47,6 +47,24 @@ const AuthForm = () => {
             console.log(err)
         }
     };
+
+    const handleGoogleSignin = async (credentialResponse) => {
+        try {
+            console.log("Google sign in success:", credentialResponse);
+            const response = await axios.post(
+                "http://localhost:5000/api/auth/google-login",
+                { idToken: credentialResponse.credential },
+                { withCredentials: true }
+            );
+
+            console.log("Google login successful:", response.data);
+            navigate("/home");
+        } 
+        catch (error) {
+            console.log(error);
+        }
+    };
+
 
   return (
     <div>
@@ -90,9 +108,14 @@ const AuthForm = () => {
 
             </p>
 
+            <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+                <GoogleLogin
+                    onSuccess={handleGoogleSignin}
+                />
+            </GoogleOAuthProvider>
+
         </form>
     </div>
   )
 }
-
 export default AuthForm

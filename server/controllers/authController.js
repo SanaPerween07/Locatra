@@ -1,24 +1,23 @@
 const userModel = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const { OAuth2Client } = require("google-auth-library");
 require('dotenv').config();
 
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 const signup = async (req, res) => {
     try{
         const { email, password } = req.body;
 
-        // Check if user already exists
         const existingUser = await userModel.findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: "User already exists" });
         }
 
-        // 2. Generate salt & hash password
         const salt = await bcrypt.genSalt(10); 
         const hashedPassword = await bcrypt.hash(password, salt);
 
-        // If not, create one
         const user = await userModel.create({ email, password : hashedPassword });
         res.status(201).json({
             message: "User registered successfully",
@@ -39,14 +38,12 @@ const login = async (req, res) => {
         console.log(user);
         if (!user) return res.status(400).json({ message: "Invalid credentials" });
 
-        // Compare entered password with hashed password
         const isMatch = await bcrypt.compare(password, user.password);
         console.log(isMatch);
         if (!isMatch) {
             return res.status(400).json({ message: "Invalid credentials" });
         }
 
-        // Create JWT
         const token = jwt.sign(
             { id: user._id, email: user.email },
             process.env.JWT_SECRET,
@@ -54,11 +51,8 @@ const login = async (req, res) => {
         );
         console.log(token);
 
-        // 🔑 Send JWT in HTTP-only cookie
         res.cookie("token", token, {
             httpOnly: true,
-            // secure: process.env.NODE_ENV === "production",
-            // sameSite: "strict",
             maxAge: 15 * 60 * 1000, 
         });
 
@@ -72,4 +66,103 @@ const login = async (req, res) => {
 }
 
 };
-module.exports ={signup , login};
+
+const googleOAuth = async (req, res) => {
+    try {
+        const { idToken } = req.body;
+        if (!idToken) {
+            return res.status(400).json({ message: "No ID token provided" });
+        }
+
+        const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+        const googleResponse = await googleClient.verifyIdToken({
+            idToken,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+
+        const payload = googleResponse.getPayload();
+        const { sub: googleId, email } = payload;
+
+        let user = await userModel.findOne({ email });
+        if (!user) {
+            user = new userModel({
+                email,
+                googleId,
+                isGoogleUser: true,
+            });
+            await user.save();
+        }
+
+        const token = jwt.sign(
+            { id: user._id, email: user.email },
+            process.env.JWT_SECRET,
+            { expiresIn: "15m" }
+        );
+
+        const refreshToken = jwt.sign(
+            { id: user._id },
+            process.env.JWT_REFRESH_SECRET,
+            { expiresIn: "7d" }
+        );
+
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 15 * 60 * 1000, 
+        });
+
+        res.cookie("refreshToken", refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict",
+            maxAge: 7 * 24 * 60 * 60 * 1000, 
+        });
+
+        res.status(200).json({
+            message: "Google login successful",
+            user: { id: user._id, email: user.email },
+            token,        
+            refreshToken, 
+        });
+    } 
+    catch (error) {
+        res.status(500).json({ message: "Google login failed", error: error.message });
+    }
+
+
+};
+
+const refreshToken = async(req, res) => {
+    try{
+        const refreshToken = req.cookies.refreshToken;
+        if (!refreshToken) {
+            return res.status(401).json({ message: "No refresh token" });
+        }
+
+        jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, (err, decoded) => {
+            if (err) return res.status(403).json({ message: "Invalid refresh token" });
+
+            const newAccessToken = jwt.sign(
+                { id: decoded.id },
+                process.env.JWT_SECRET,
+                { expiresIn: "15m" }
+            );
+
+            res.cookie("token", newAccessToken, {
+                httpOnly: true,
+                secure: process.env.NODE_ENV === "production",
+                sameSite: "strict",
+                maxAge: 15 * 60 * 1000,
+            });
+
+            res.json({ token: newAccessToken });
+        });
+    }
+    catch(err){
+
+    }
+}
+
+module.exports ={signup , login, googleOAuth, refreshToken};

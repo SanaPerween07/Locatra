@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import polyline from "@mapbox/polyline";
 
+
 const MapplsMap = () => {
   const [mapObj, setMapObj] = useState(null);
 
@@ -12,8 +13,7 @@ const MapplsMap = () => {
   const [destSuggestions, setDestSuggestions] = useState([]);
 
   const [routePolyline, setRoutePolyline] = useState(null);
-  const [startMarker, setStartMarker] = useState(null);
-  const [endMarker, setEndMarker] = useState(null);
+  const [routeInfo, setRouteInfo] = useState(null);
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -45,31 +45,30 @@ const MapplsMap = () => {
         params: { query },
       });
       setter(res.data.suggestedLocations || []);
-    } catch (err) {
+    } 
+    catch (err) {
       console.error("Autosuggest error:", err.response?.data || err.message);
     }
   };
 
   const geocodeAddress = async (address) => {
     if (!address) return null;
+    console.log("Frontend sending address to geocode:", address); 
+  
     try {
       const res = await axios.get("http://localhost:5000/api/geocode", {
         params: { address },
       });
+     
       return res.data;
-    } catch (err) {
+    } 
+    catch (err) {
       console.error("Geocode error:", err.response?.data || err.message);
       return null;
     }
   };
 
   const getRoute = async () => {
-
-    if (!mapObj) {
-      alert("Map is not initialized yet!");
-      return;
-    }
-
     if (!source || !destination) {
       alert("Please enter both source and destination!");
       return;
@@ -78,6 +77,9 @@ const MapplsMap = () => {
     try {
       const src = await geocodeAddress(source);
       const dest = await geocodeAddress(destination);
+
+      console.log("Source eLoc:", src); 
+      console.log("Destination eLoc:", dest); 
 
       if (!src?.eLoc || !dest?.eLoc) {
         alert("Could not find eLocs for given addresses");
@@ -89,8 +91,8 @@ const MapplsMap = () => {
       });
 
       const routeData = routeRes.data;
+      console.log("Route API Response:", routeData);
 
-      // Decode Mappls polyline
       const coords = polyline.decode(routeData.routes[0].geometry); 
 
       if (!coords.length) {
@@ -98,48 +100,46 @@ const MapplsMap = () => {
         return;
       }
 
-      // Remove previous route and markers
-      if (routePolyline) routePolyline.setMap(null);
-      if (startMarker) startMarker.setMap(null);
-      if (endMarker) endMarker.setMap(null);
+      const route = routeData.routes[0];
+      const distance = route.distance;
+      const duration = route.duration;
+      
+      const distanceKm = (distance / 1000).toFixed(2);
+      const durationMinutes = Math.round(duration / 60);
+      
+      setRouteInfo({
+        distance: distanceKm,
+        duration: durationMinutes,
+        distanceMeters: distance,
+        durationSeconds: duration
+      });
 
-      // Draw new route
+      if (routePolyline) {
+        routePolyline.setMap(null);
+      }
+
       const newPolyline = new window.mappls.Polyline({
         map: mapObj,
-        path: coords.map(([lat, lng]) => ({ lat, lng })),
+        path: coords.map(([lat, lng]) => ({ lat, lng })), 
         strokeColor: "#1976D2",
         strokeWeight: 5,
-        strokeOpacity: 0.8,
       });
+
       setRoutePolyline(newPolyline);
 
-      // Add start and end markers
-      const start = new window.mappls.Marker({
-        map: mapObj,
-        position: { lat: coords[0][0], lng: coords[0][1] },
-        title: "Start",
-      });
-      const end = new window.mappls.Marker({
-        map: mapObj,
-        position: { lat: coords[coords.length - 1][0], lng: coords[coords.length - 1][1] },
-        title: "End",
-      });
-      setStartMarker(start);
-      setEndMarker(end);
+      mapObj.fitBounds(coords.map(([lat, lng]) => [ lng, lat]));
 
-      // Zoom map to fit route
-      mapObj.fitBounds(coords.map(([lat, lng]) => [lng, lat]));
-
-
-    } catch (err) {
-      console.error("Route error:", err.response?.data || err.message);
-      alert("Failed to fetch route");
+    } 
+    catch (err) {
+        console.error("Route error:", err.response?.data || err.message);
+        alert("Failed to fetch route");
     }
   };
-
+  
   return (
     <div>
       <div className="p-3 bg-gray-100 flex gap-2">
+
         <div className="relative">
           <input
             type="text"
@@ -151,6 +151,7 @@ const MapplsMap = () => {
             }}
             className="px-2 py-1 border rounded w-64"
           />
+
           {sourceSuggestions.length > 0 && (
             <ul className="absolute bg-white border w-64 max-h-40 overflow-y-auto z-10">
               {sourceSuggestions.map((s, i) => (
@@ -180,6 +181,7 @@ const MapplsMap = () => {
             }}
             className="px-2 py-1 border rounded w-64"
           />
+
           {destSuggestions.length > 0 && (
             <ul className="absolute bg-white border w-64 max-h-40 overflow-y-auto z-10">
               {destSuggestions.map((s, i) => (
@@ -198,10 +200,25 @@ const MapplsMap = () => {
           )}
         </div>
 
-        <button onClick={getRoute} className="px-4 py-2 bg-blue-600 text-white rounded" disabled={!mapObj}>
+        <button onClick={getRoute} className="px-4 py-2 bg-blue-600 text-white rounded">
           Get Route
         </button>
       </div>
+
+      {routeInfo && (
+        <div>
+          <div>
+            <div>
+              <span>Distance:</span>
+              <span>{routeInfo.distance} km</span>
+            </div>
+            <div>
+              <span>Duration:</span>
+              <span>{routeInfo.duration} minutes</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div
         id="map"
