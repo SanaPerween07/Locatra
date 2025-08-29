@@ -25,8 +25,8 @@ const AuthForm = () => {
 
         try {
             const url = isLogin
-                ? "http://localhost:5000/api/auth/login"
-                : "http://localhost:5000/api/auth/signup";
+                ? `${apiBase}/api/auth/login`
+                : `${apiBase}/api/auth/signup`;
 
             const payload = { email, password };
 
@@ -52,7 +52,7 @@ const AuthForm = () => {
         try {
             console.log("Google sign in success:", credentialResponse);
             const response = await axios.post(
-                "http://localhost:5000/api/auth/google-login",
+                `${apiBase}/api/auth/google-login`,
                 { idToken: credentialResponse.credential },
                 { withCredentials: true }
             );
