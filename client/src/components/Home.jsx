@@ -4,6 +4,9 @@ import polyline from "@mapbox/polyline";
 
 
 const MapplsMap = () => {
+
+  const apiBase = import.meta.env.VITE_API_BASE;
+
   const [mapObj, setMapObj] = useState(null);
 
   const [source, setSource] = useState("");

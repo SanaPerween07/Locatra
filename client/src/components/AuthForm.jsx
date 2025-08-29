@@ -7,6 +7,8 @@ axios.defaults.withCredentials = true;
 
 const AuthForm = () => {
 
+    const apiBase = import.meta.env.VITE_API_BASE;
+
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
