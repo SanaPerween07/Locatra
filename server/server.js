@@ -30,6 +30,9 @@ app.options(/.*/, cors({
 
 connectDB();
 
+app.get('/', (req, res) => {
+  res.send("API working")
+})
 app.use("/api/auth", authRoutes);
 app.use("/api/autosuggest", autosuggestAPI);
 app.use("/api/geocode", geocodeAPI);
