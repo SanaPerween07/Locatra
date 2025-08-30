@@ -7,8 +7,6 @@ axios.defaults.withCredentials = true;
 
 const AuthForm = () => {
 
-    const apiBase = import.meta.env.VITE_API_BASE;
-
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -27,8 +25,8 @@ const AuthForm = () => {
 
         try {
             const url = isLogin
-                ? `${apiBase}/api/auth/login`
-                : `${apiBase}/api/auth/signup`;
+                ? `http://localhost:5000/api/auth/login`
+                : `http://localhost:5000/api/auth/signup`;
 
             const payload = { email, password };
 
@@ -54,9 +52,8 @@ const AuthForm = () => {
         try {
             console.log("Google sign in success:", credentialResponse);
             const response = await axios.post(
-                `${apiBase}/api/auth/google-login`,
+                `http://localhost:5000/api/auth/google-login`,
                 { idToken: credentialResponse.credential },
-                { withCredentials: true }
             );
 
             console.log("Google login successful:", response.data);

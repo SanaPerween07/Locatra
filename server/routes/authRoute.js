@@ -8,5 +8,4 @@ router.post('/login', login)
 router.post('/google-login', googleOAuth);
 router.post('/refresh', refreshToken);
 
-
 module.exports = router;

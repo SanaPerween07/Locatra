@@ -2,10 +2,9 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import polyline from "@mapbox/polyline";
 
+axios.defaults.withCredentials = true;
 
 const MapplsMap = () => {
-
-  const apiBase = import.meta.env.VITE_API_BASE;
 
   const [mapObj, setMapObj] = useState(null);
 
@@ -44,7 +43,7 @@ const MapplsMap = () => {
   const getSuggestions = async (query, setter) => {
     if (!query) return setter([]);
     try {
-      const res = await axios.get(`${apiBase}/api/autosuggest`, {
+      const res = await axios.get(`http://localhost:5000/api/autosuggest`, {
         params: { query },
       });
       setter(res.data.suggestedLocations || []);
@@ -59,7 +58,7 @@ const MapplsMap = () => {
     console.log("Frontend sending address to geocode:", address); 
   
     try {
-      const res = await axios.get(`${apiBase}/api/geocode`, {
+      const res = await axios.get(`http://localhost:5000/api/geocode`, {
         params: { address },
       });
      
@@ -89,7 +88,7 @@ const MapplsMap = () => {
         return;
       }
 
-      const routeRes = await axios.get(`${apiBase}/api/route`, {
+      const routeRes = await axios.get(`http://localhost:5000/api/route`, {
         params: { sourceEloc: src.eLoc, destEloc: dest.eLoc },
       });
 
