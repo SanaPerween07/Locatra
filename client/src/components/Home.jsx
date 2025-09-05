@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import polyline from "@mapbox/polyline";
+// import polyline from "@mapbox/polyline";
 
 axios.defaults.withCredentials = true;
 
@@ -53,16 +53,18 @@ const MapplsMap = () => {
     }
   };
 
-  const geocodeAddress = async (address) => {
-    if (!address) return null;
-    console.log("Frontend sending address to geocode:", address); 
+  const geocodeAddress = async (text) => {
+    if (!text) return null;
+    console.log("Frontend sending address to geocode:", text); 
   
     try {
       const res = await axios.get(`http://localhost:5000/api/geocode`, {
-        params: { address },
+        params: { 
+          text ,
+        },
       });
-     
-      return res.data;
+
+      return res.data; 
     } 
     catch (err) {
       console.error("Geocode error:", err.response?.data || err.message);
@@ -80,61 +82,46 @@ const MapplsMap = () => {
       const src = await geocodeAddress(source);
       const dest = await geocodeAddress(destination);
 
-      console.log("Source eLoc:", src); 
-      console.log("Destination eLoc:", dest); 
-
-      if (!src?.eLoc || !dest?.eLoc) {
-        alert("Could not find eLocs for given addresses");
+      if (!src?.lat || !src?.lng || !dest?.lat || !dest?.lng) {
+        alert("Could not find coordinates for given addresses");
         return;
       }
 
-      const routeRes = await axios.get(`http://localhost:5000/api/route`, {
-        params: { sourceEloc: src.eLoc, destEloc: dest.eLoc },
+      const res = await axios.get("http://localhost:5000/api/route", {
+        params: {
+          sourceLat: src.lat,
+          sourceLng: src.lng,
+          destLat: dest.lat,
+          destLng: dest.lng,
+        },
       });
 
-      const routeData = routeRes.data;
-      console.log("Route API Response:", routeData);
+      const routeData = res.data.data; 
 
-      const coords = polyline.decode(routeData.routes[0].geometry); 
-
-      if (!coords.length) {
+      if (!routeData?.features?.length) {
         alert("No route found!");
         return;
       }
 
-      const route = routeData.routes[0];
-      const distance = route.distance;
-      const duration = route.duration;
-      
-      const distanceKm = (distance / 1000).toFixed(2);
-      const durationMinutes = Math.round(duration / 60);
-      
-      setRouteInfo({
-        distance: distanceKm,
-        duration: durationMinutes,
-        distanceMeters: distance,
-        durationSeconds: duration
-      });
+      const lineCoords = routeData.features[0].geometry.coordinates[0];
 
-      if (routePolyline) {
-        routePolyline.setMap(null);
-      }
+      const path = lineCoords.map(([lng, lat]) => ({ lat, lng }));
 
       const newPolyline = new window.mappls.Polyline({
         map: mapObj,
-        path: coords.map(([lat, lng]) => ({ lat, lng })), 
+        path,
         strokeColor: "#1976D2",
         strokeWeight: 5,
       });
 
       setRoutePolyline(newPolyline);
 
-      mapObj.fitBounds(coords.map(([lat, lng]) => [ lng, lat]));
+      mapObj.fitBounds(lineCoords.map(([lng, lat]) => [lng, lat]));
 
     } 
     catch (err) {
-        console.error("Route error:", err.response?.data || err.message);
-        alert("Failed to fetch route");
+      console.error("Route error:", err.response?.data || err.message);
+      alert("Failed to fetch route");
     }
   };
   

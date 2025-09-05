@@ -50,13 +50,13 @@ const AuthForm = () => {
 
     const handleGoogleSignin = async (credentialResponse) => {
         try {
-            console.log("Google sign in success:", credentialResponse);
+            console.log("Google sign in successful!");
             const response = await axios.post(
                 `http://localhost:5000/api/auth/google-login`,
                 { idToken: credentialResponse.credential },
             );
 
-            console.log("Google login successful:", response.data);
+            console.log("Google login successful!");
             navigate("/home");
         } 
         catch (error) {

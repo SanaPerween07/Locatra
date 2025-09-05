@@ -18,7 +18,8 @@ router.get("/", async (req, res) => {
     );
 
     res.json({ suggestedLocations: data.suggestedLocations || [] });
-  } catch (err) {
+  } 
+  catch (err) {
     console.error("Autosuggest error:", err.response?.data || err.message);
     res
       .status(err.response?.status || 500)
