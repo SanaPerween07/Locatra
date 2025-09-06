@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-// import polyline from "@mapbox/polyline";
+import { useNavigate } from "react-router-dom";
 
 axios.defaults.withCredentials = true;
 
@@ -16,6 +16,25 @@ const MapplsMap = () => {
 
   const [routePolyline, setRoutePolyline] = useState(null);
   const [routeInfo, setRouteInfo] = useState(null);
+
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        await axios.get("http://localhost:5000/api/auth/home");
+        setLoading(false);
+      } 
+      catch {
+        console.log("User not authorized!");
+        navigate("/"); 
+      }
+    };
+    checkAuth();
+  }, [navigate]);
+
+  if (loading) return <p>Loading...</p>;
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -97,6 +116,7 @@ const MapplsMap = () => {
       });
 
       const routeData = res.data.data; 
+      console.log(routeData)
 
       if (!routeData?.features?.length) {
         alert("No route found!");
@@ -117,6 +137,26 @@ const MapplsMap = () => {
       setRoutePolyline(newPolyline);
 
       mapObj.fitBounds(lineCoords.map(([lng, lat]) => [lng, lat]));
+
+      const feature = routeData.features[0];
+
+      // ✅ Get distance (meters → km)
+      const distanceMeters = feature.properties.distance; // meters
+      const distanceKm = (distanceMeters / 1000).toFixed(2); // km
+
+      // ✅ Get time (seconds → hr + min)
+      const timeSeconds = feature.properties.time; // seconds         
+
+      const hours = Math.floor(timeSeconds / 3600);
+      const minutes = Math.floor((timeSeconds % 3600) / 60);
+
+      const formattedTime =
+        hours > 0 ? `${hours} hr ${minutes} min` : `${minutes} min`;
+
+      setRouteInfo({
+        distance: distanceKm,
+        time: formattedTime,
+      });
 
     } 
     catch (err) {
@@ -203,7 +243,7 @@ const MapplsMap = () => {
             </div>
             <div>
               <span>Duration:</span>
-              <span>{routeInfo.duration} minutes</span>
+              <span>{routeInfo.time} minutes</span>
             </div>
           </div>
         </div>
