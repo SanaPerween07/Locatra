@@ -66,55 +66,76 @@ const AuthForm = () => {
 
 
   return (
-    <div>
-        <h2> {isLogin ? 'Login': 'Sign-Up'} </h2>
-        <form onSubmit={handleSubmit}>
-            <input 
-                type='email' 
-                placeholder='enter your username' 
-                value={email}
-                onChange={(e) => setEmail(e.target.value)} 
-                required
-            />
-            <input 
-                type='password' 
-                placeholder='enter your password' 
-                value={password}
-                onChange={(e) => setPassword(e.target.value)} 
-                required
-            />
+    <div className="container d-flex justify-content-center align-items-center vh-100">
+        <div className="card shadow p-4" style={{ width: "400px" }}>
+            <h3 className="text-center mb-4">
+            {isLogin ? "Login" : "Sign Up"}
+            </h3>
+            <form onSubmit={handleSubmit}>
+                <div className="mb-3">
+                    <label className="form-label">Username</label>
+                    <input 
+                        type='email' 
+                        placeholder='enter your username' 
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)} 
+                        className="form-control"
+                        required
+                    />
+                </div>
+                <div className="mb-3">
+                    <label className="form-label">Password</label>
+                    <input 
+                        type='password' 
+                        placeholder='enter your password' 
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="form-control" 
+                        required
+                    />
+                </div>
 
-            {!isLogin && (
-                <input
-                    type="password"
-                    placeholder="Confirm password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                />
-            )}
+                {!isLogin && (
+                    <div className="mb-3">
+                        <label className="form-label">Confirm Password</label>
+                        <input
+                            type="password"
+                            placeholder="Confirm password"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPassword(e.target.value)}
+                            className="form-control"
+                            required
+                        />
+                    </div>
+                    
+                )}
 
-            <button type="submit"> {isLogin ? 'Login' : 'Sign Up'} </button>
+                <button type="submit" className="btn btn-success w-100 mt-2"> {isLogin ? 'Login' : 'Sign Up'} </button>
 
-            <p>
-                {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
-                <span 
-                    style={{ color: 'blue', cursor: 'pointer' }} 
-                    onClick={() => setIsLogin(!isLogin)}
-                    >
-                    {isLogin ? 'Sign Up' : 'Login'}
-                </span>
+                <p className="text-center mt-3">
+                    {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
+                    <span 
+                        className="text-primary"
+                        style={{ cursor: "pointer" }}
+                        onClick={() => setIsLogin(!isLogin)}
+                        >
+                        {isLogin ? 'Sign Up' : 'Login'}
+                    </span>
 
-            </p>
+                </p>
 
-            <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
-                <GoogleLogin
-                    onSuccess={handleGoogleSignin}
-                />
-            </GoogleOAuthProvider>
+                <div className="d-flex justify-content-center mt-3">
+                    <GoogleOAuthProvider clientId={import.meta.env.VITE_GOOGLE_CLIENT_ID}>
+                        <GoogleLogin
+                            onSuccess={handleGoogleSignin}
+                        />
+                    </GoogleOAuthProvider>
+                </div>
 
-        </form>
+            </form>
+        </div>
     </div>
+    
   )
 }
 export default AuthForm

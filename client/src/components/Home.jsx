@@ -34,7 +34,6 @@ const MapplsMap = () => {
     checkAuth();
   }, [navigate]);
 
-  if (loading) return <p>Loading...</p>;
 
   useEffect(() => {
     const script = document.createElement("script");
@@ -116,7 +115,6 @@ const MapplsMap = () => {
       });
 
       const routeData = res.data.data; 
-      console.log(routeData)
 
       if (!routeData?.features?.length) {
         alert("No route found!");
@@ -140,12 +138,10 @@ const MapplsMap = () => {
 
       const feature = routeData.features[0];
 
-      // ✅ Get distance (meters → km)
-      const distanceMeters = feature.properties.distance; // meters
-      const distanceKm = (distanceMeters / 1000).toFixed(2); // km
+      const distanceMeters = feature.properties.distance; 
+      const distanceKm = (distanceMeters / 1000).toFixed(2); 
 
-      // ✅ Get time (seconds → hr + min)
-      const timeSeconds = feature.properties.time; // seconds         
+      const timeSeconds = feature.properties.time;         
 
       const hours = Math.floor(timeSeconds / 3600);
       const minutes = Math.floor((timeSeconds % 3600) / 60);
@@ -166,94 +162,105 @@ const MapplsMap = () => {
   };
   
   return (
-    <div>
-      <div className="p-3 bg-gray-100 flex gap-2">
-
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Enter Source"
-            value={source}
-            onChange={(e) => {
-              setSource(e.target.value);
-              getSuggestions(e.target.value, setSourceSuggestions);
-            }}
-            className="px-2 py-1 border rounded w-64"
-          />
-
-          {sourceSuggestions.length > 0 && (
-            <ul className="absolute bg-white border w-64 max-h-40 overflow-y-auto z-10">
-              {sourceSuggestions.map((s, i) => (
-                <li
-                  key={i}
-                  className="px-2 py-1 hover:bg-gray-200 cursor-pointer"
-                  onClick={() => {
-                    setSource(s.placeName || s.placeAddress);
-                    setSourceSuggestions([]);
-                  }}
-                >
-                  {s.placeName} - {s.placeAddress}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="Enter Destination"
-            value={destination}
-            onChange={(e) => {
-              setDestination(e.target.value);
-              getSuggestions(e.target.value, setDestSuggestions);
-            }}
-            className="px-2 py-1 border rounded w-64"
-          />
-
-          {destSuggestions.length > 0 && (
-            <ul className="absolute bg-white border w-64 max-h-40 overflow-y-auto z-10">
-              {destSuggestions.map((s, i) => (
-                <li
-                  key={i}
-                  className="px-2 py-1 hover:bg-gray-200 cursor-pointer"
-                  onClick={() => {
-                    setDestination(s.placeName || s.placeAddress);
-                    setDestSuggestions([]);
-                  }}
-                >
-                  {s.placeName} - {s.placeAddress}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-
-        <button onClick={getRoute} className="px-4 py-2 bg-blue-600 text-white rounded">
-          Get Route
-        </button>
-      </div>
-
-      {routeInfo && (
-        <div>
-          <div>
-            <div>
-              <span>Distance:</span>
-              <span>{routeInfo.distance} km</span>
-            </div>
-            <div>
-              <span>Duration:</span>
-              <span>{routeInfo.time} minutes</span>
-            </div>
-          </div>
-        </div>
-      )}
-
+    <div style={{ position: "relative", width: "100%", height: "100vh" }}>
       <div
         id="map"
-        style={{ width: "100%", height: "90vh", border: "1px solid #ccc" }}
+        style={{ width: "100%", height: "100vh", border: "1px solid #ccc" }}
       />
+      <div className="card shadow"
+        style={{
+          position: "absolute",
+          top: "20px",
+          left: "20px",
+          width: "300px",
+          zIndex: 1000,
+        }}
+      >
+        <div className="card-body">
+          <div className="mb-3">
+              <input
+                type="text"
+                placeholder="Enter Source"
+                value={source}
+                className="form-control"
+                onChange={(e) => {
+                  setSource(e.target.value);
+                  getSuggestions(e.target.value, setSourceSuggestions);
+                }}
+              />
+
+              {sourceSuggestions.length > 0 && (
+                <ul className="list-group mt-2" style={{ maxHeight: "120px", overflowY: "auto" }}>
+                  {sourceSuggestions.map((s, i) => (
+                    <li
+                      key={i}
+                      className="list-group-item list-group-item-action"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => {
+                        setSource(s.placeName || s.placeAddress);
+                        setSourceSuggestions([]);
+                      }}
+                    >
+                      {s.placeName} - {s.placeAddress}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="mb-3">
+              <input
+                type="text"
+                placeholder="Enter Destination"
+                className="form-control"
+                value={destination}
+                onChange={(e) => {
+                  setDestination(e.target.value);
+                  getSuggestions(e.target.value, setDestSuggestions);
+                }}
+              />
+
+              {destSuggestions.length > 0 && (
+                <ul className="list-group mt-2" style={{ maxHeight: "120px", overflowY: "auto" }}>
+                  {destSuggestions.map((s, i) => (
+                    <li
+                      key={i}
+                      className="list-group-item list-group-item-action"
+                      style={{ cursor: "pointer" }}
+                      onClick={() => {
+                        setDestination(s.placeName || s.placeAddress);
+                        setDestSuggestions([]);
+                      }}
+                    >
+                      {s.placeName} - {s.placeAddress}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <button  className="btn btn-success w-100 mb-2" onClick={getRoute} >
+              Get Route
+            </button>
+
+            {routeInfo && (
+              <div className="alert alert-info p-2 mb-0">
+                <div>
+                  <div>
+                    <span>Distance: </span>
+                    <span>{routeInfo.distance} km</span>
+                  </div>
+                  <div>
+                    <span>Duration: </span>
+                    <span>{routeInfo.time} </span>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>         
     </div>
+
   );
 };
 
