@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 
 axios.defaults.withCredentials = true;
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 const AuthForm = () => {
 
@@ -25,8 +26,8 @@ const AuthForm = () => {
 
         try {
             const url = isLogin
-                ? `http://localhost:5000/api/auth/login`
-                : `http://localhost:5000/api/auth/signup`;
+                ? `${API_BASE}/api/auth/login`
+                : `${API_BASE}/api/auth/signup`;
 
             const payload = { email, password };
 
@@ -52,7 +53,7 @@ const AuthForm = () => {
         try {
             console.log("Google sign in successful!");
             const response = await axios.post(
-                `http://localhost:5000/api/auth/google-login`,
+                `${API_BASE}/api/auth/google-login`,
                 { idToken: credentialResponse.credential },
             );
 

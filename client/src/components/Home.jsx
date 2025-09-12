@@ -3,6 +3,7 @@ import axios from "axios";
 import { useNavigate } from "react-router-dom";
 
 axios.defaults.withCredentials = true;
+const API_BASE = import.meta.env.VITE_API_BASE_URL;
 
 const MapplsMap = () => {
 
@@ -23,7 +24,7 @@ const MapplsMap = () => {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        await axios.get("http://localhost:5000/api/auth/home");
+        await axios.get(`${API_BASE}/api/auth/home`);
         setLoading(false);
       } 
       catch {
@@ -61,7 +62,7 @@ const MapplsMap = () => {
   const getSuggestions = async (query, setter) => {
     if (!query) return setter([]);
     try {
-      const res = await axios.get(`http://localhost:5000/api/autosuggest`, {
+      const res = await axios.get(`${API_BASE}/api/autosuggest`, {
         params: { query },
       });
       setter(res.data.suggestedLocations || []);
@@ -76,7 +77,7 @@ const MapplsMap = () => {
     console.log("Frontend sending address to geocode:", text); 
   
     try {
-      const res = await axios.get(`http://localhost:5000/api/geocode`, {
+      const res = await axios.get(`${API_BASE}/api/geocode`, {
         params: { 
           text ,
         },
@@ -105,7 +106,7 @@ const MapplsMap = () => {
         return;
       }
 
-      const res = await axios.get("http://localhost:5000/api/route", {
+      const res = await axios.get(`${API_BASE}/api/route`, {
         params: {
           sourceLat: src.lat,
           sourceLng: src.lng,
