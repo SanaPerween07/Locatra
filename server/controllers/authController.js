@@ -2,6 +2,7 @@ const userModel = require("../models/userModel");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
+const mongoose = require("mongoose");
 require('dotenv').config();
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -85,7 +86,15 @@ const googleOAuth = async (req, res) => {
 
         const payload = googleResponse.getPayload();
         const { sub: googleId, email } = payload;
+        console.log("Google token verified for email:", email);
 
+        // Check database connection before querying
+        if (mongoose.connection.readyState !== 1) {
+            console.error("Database not connected. Ready state:", mongoose.connection.readyState);
+            return res.status(500).json({ message: "Database connection error" });
+        }
+
+        console.log("Querying database for user...");
         let user = await userModel.findOne({ email });
         if (!user) {
             user = new userModel({
