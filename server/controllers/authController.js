@@ -7,6 +7,8 @@ require('dotenv').config();
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
+const isProduction = process.env.NODE_ENV === "production";
+
 const signup = async (req, res) => {
     try{
         const { email, password } = req.body;
@@ -54,8 +56,9 @@ const login = async (req, res) => {
 
         res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            secure: isProduction,
+            sameSite: isProduction ? "None" : "Lax",
+         // always None for cross-site
             maxAge: 15 * 60 * 1000, 
         });
 
@@ -77,9 +80,7 @@ const googleOAuth = async (req, res) => {
             return res.status(400).json({ message: "No ID token provided" });
         }
 
-        const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
-
-        const googleResponse = await googleClient.verifyIdToken({
+        const googleResponse = await client.verifyIdToken({
             idToken,
             audience: process.env.GOOGLE_CLIENT_ID,
         });
@@ -88,7 +89,6 @@ const googleOAuth = async (req, res) => {
         const { sub: googleId, email } = payload;
         console.log("Google token verified for email:", email);
 
-        // Check database connection before querying
         if (mongoose.connection.readyState !== 1) {
             console.error("Database not connected. Ready state:", mongoose.connection.readyState);
             return res.status(500).json({ message: "Database connection error" });
@@ -119,15 +119,15 @@ const googleOAuth = async (req, res) => {
 
         res.cookie("token", token, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            secure: isProduction,
+            sameSite: isProduction ? "None" : "Lax",
             maxAge: 15 * 60 * 1000, 
         });
 
         res.cookie("refreshToken", refreshToken, {
             httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+            secure: isProduction,
+            sameSite: isProduction ? "None" : "Lax",
             maxAge: 7 * 24 * 60 * 60 * 1000, 
         });
 
@@ -163,8 +163,8 @@ const refreshToken = async(req, res) => {
 
             res.cookie("token", newAccessToken, {
                 httpOnly: true,
-                secure: process.env.NODE_ENV === "production",
-                sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+                secure: isProduction,
+                sameSite: isProduction ? "None" : "Lax",
                 maxAge: 15 * 60 * 1000,
             });
 
